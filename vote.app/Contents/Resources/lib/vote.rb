@@ -34,10 +34,12 @@ begin
     vote_form.send("data[Member][password]", account[:password])
     log.puts "アカウント：#{account[:email]} で投票します"
     result = agent.submit(vote_form)
-    if result.parser.css('.section').text.include? '本日は既に投票済みです'
+    if result.parser.css('.section').text.include? '投票完了'
+      log.puts '=> 投票完了'
+    elsif result.parser.css('.section').text.include? '本日は既に投票済みです'
       log.puts '=> 本日は既に投票済みです'
     else
-      log.puts '=> たぶん成功しました'
+      log.puts '=> 不明なエラーです'
       log.puts result.parser.css('.section').text
     end
     result.link_with(text: 'ログアウトする').click
