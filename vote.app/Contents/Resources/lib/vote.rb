@@ -12,29 +12,31 @@ log = File.open(File.expand_path("../../../../../log/#{Time.now.strftime '%Y%m%d
 log.puts 'スクリプト開始'
 
 begin
-  agent = Mechanize.new
   accounts = []
   File.open(File.expand_path('../../../../../configs', __FILE__), "r") do |io|
     io.each do |line|
       next unless line.match(/.+@.+:.+/)
       tmp = line.split(":", 3)
-      accounts.push({email: tmp[0].strip, password: tmp[1].strip})
 
+      agent = Mechanize.new
       agent.user_agent = tmp[2].strip
       agent.redirect_ok = true
       agent.follow_meta_refresh = true
+
+      accounts.push({email: tmp[0].strip, password: tmp[1].strip, agent: agent})
     end
+    accounts.shuffle!
   end
 
   accounts.each do |account|
-    start_page = agent.get('http://www.yurugp.jp/vote/detail.php?id=00000021')
-    vote_page = agent.submit(start_page.forms[0])
+    start_page = account[:agent].get('http://www.yurugp.jp/vote/detail.php?id=00000021')
+    vote_page = account[:agent].submit(start_page.forms[0])
     vote_form = vote_page.forms[0]
     vote_form.send("data[Member][email]", account[:email])
     vote_form.send("data[Member][password]", account[:password])
     log.puts "アカウント：#{account[:email]} で投票します"
-    log.puts"ユーザーエージェントは#{agent}です"
-    result = agent.submit(vote_form)
+    log.puts"ユーザーエージェントは#{account[:agent].user_agent}です"
+    result = account[:agent].submit(vote_form)
     if result.parser.css('.section').text.include? '投票完了'
       log.puts '=> 投票完了'
     elsif result.parser.css('.section').text.include? '本日は既に投票済みです'
