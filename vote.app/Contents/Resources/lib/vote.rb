@@ -32,10 +32,17 @@ begin
     start_page = account[:agent].get('http://www.yurugp.jp/vote/detail.php?id=00000021')
     vote_page = account[:agent].submit(start_page.forms[0])
     vote_form = vote_page.forms[0]
+    start_time = Time.now
+    wait_time = Random.rand(0.10 .. 10.00).round(2)
+    sleep(wait_time)
+    end_time = Time.now
     vote_form.send("data[Member][email]", account[:email])
     vote_form.send("data[Member][password]", account[:password])
+    log.puts "始まりの時間：#{start_time}"
+    log.puts "終わりの時間：#{end_time}"
+    log.puts "待機時間：#{(end_time - start_time).round(2)} sec"
     log.puts "アカウント：#{account[:email]} で投票します"
-    log.puts"ユーザーエージェントは#{account[:agent].user_agent}です"
+    log.puts "ユーザーエージェントは#{account[:agent].user_agent}です"
     result = account[:agent].submit(vote_form)
     if result.parser.css('.section').text.include? '投票完了'
       log.puts '=> 投票完了'
