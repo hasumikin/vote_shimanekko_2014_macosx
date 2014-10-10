@@ -13,7 +13,7 @@ log.puts 'スクリプト開始'
 
 begin
   agent = Mechanize.new
-  agent.user_agent = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)'
+  #agent.user_agent = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)'
   agent.redirect_ok = true
   agent.follow_meta_refresh = true
 
@@ -21,8 +21,8 @@ begin
   File.open(File.expand_path('../../../../../configs', __FILE__), "r") do |io|
     io.each do |line|
       next unless line.match(/.+@.+:.+/)
-      tmp = line.split(":", 2)
-      accounts.push({email: tmp[0].strip, password: tmp[1].strip})
+      tmp = line.split(":", 3)
+      accounts.push({email: tmp[0].strip, password: tmp[1].strip, userAgent: tmp[2].strip })
     end
   end
 
@@ -32,7 +32,8 @@ begin
     vote_form = vote_page.forms[0]
     vote_form.send("data[Member][email]", account[:email])
     vote_form.send("data[Member][password]", account[:password])
-    log.puts "アカウント：#{account[:email]} で投票します"
+    agent.user_agent = "#{account[:userAgent]}"
+    log.puts "アカウント：#{account[:email]},ユーザエージェント：#{agent.user_agent} で投票します"
     result = agent.submit(vote_form)
     if result.parser.css('.section').text.include? '投票完了'
       log.puts '=> 投票完了'
