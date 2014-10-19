@@ -24,6 +24,10 @@ begin
       tmp = line.split(":", 3)
       accounts.push({email: tmp[0].strip, password: tmp[1].strip, userAgent: tmp[2].strip })
     end
+      log.puts '投票順序をシャッフル'
+      accounts.shuffle!
+      log.puts "accounts[0]:#{accounts[0]}"
+      log.puts "accounts[1]:#{accounts[1]}"
   end
 
   accounts.each do |account|
