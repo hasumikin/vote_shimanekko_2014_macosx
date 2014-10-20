@@ -38,7 +38,7 @@ begin
     vote_form.send("data[Member][password]", account[:password])
     agent.user_agent = "#{account[:userAgent]}"
     log.puts "アカウント：#{account[:email]},ユーザエージェント：#{agent.user_agent} で投票します"
-    vote_time = rand(0..10.00).round(2)
+    vote_time = rand(0.10..10.00).round(2)
     sleep(vote_time)
     log.puts "待機時間:#{vote_time}"
     result = agent.submit(vote_form)
