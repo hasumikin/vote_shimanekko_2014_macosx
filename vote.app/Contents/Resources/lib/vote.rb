@@ -12,28 +12,43 @@ log = File.open(File.expand_path("../../../../../log/#{Time.now.strftime '%Y%m%d
 log.puts 'スクリプト開始'
 
 begin
-  agent = Mechanize.new
-  agent.user_agent = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)'
-  agent.redirect_ok = true
-  agent.follow_meta_refresh = true
-
   accounts = []
   File.open(File.expand_path('../../../../../configs', __FILE__), "r") do |io|
     io.each do |line|
       next unless line.match(/.+@.+:.+/)
-      tmp = line.split(":", 2)
-      accounts.push({email: tmp[0].strip, password: tmp[1].strip})
+      tmp = line.split(":", 3)
+
+      agent = Mechanize.new
+      agent.user_agent = tmp[2].strip
+      agent.redirect_ok = true
+      agent.follow_meta_refresh = true
+
+      accounts.push({email: tmp[0].strip, password: tmp[1].strip, agent: agent})
     end
+    accounts.shuffle!
   end
 
   accounts.each do |account|
-    start_page = agent.get('http://www.yurugp.jp/vote/detail.php?id=00000021')
-    vote_page = agent.submit(start_page.forms[0])
+    start_page = account[:agent].get('http://www.yurugp.jp/vote/detail.php?id=00000021')
+    vote_page = account[:agent].submit(start_page.forms[0])
     vote_form = vote_page.forms[0]
+
+    #待機時間の設定とlogに出すための準備
+    wait_time = Random.rand(0.10 .. 10.00).round(2)
+    start_time = Time.now
+    sleep wait_time
+    end_time = Time.now
+
+    #投票
     vote_form.send("data[Member][email]", account[:email])
     vote_form.send("data[Member][password]", account[:password])
+
+    #logへ出力
+    log.puts "待機時間：#{(end_time - start_time).round(2)} sec"
     log.puts "アカウント：#{account[:email]} で投票します"
-    result = agent.submit(vote_form)
+    log.puts "ユーザーエージェントは#{account[:agent].user_agent}です"
+
+    result = account[:agent].submit(vote_form)
     if result.parser.css('.section').text.include? '投票完了'
       log.puts '=> 投票完了'
     elsif result.parser.css('.section').text.include? '本日は既に投票済みです'
@@ -43,7 +58,6 @@ begin
       log.puts result.parser.css('.section').text
     end
     result.link_with(text: 'ログアウトする').click
-    sleep 0.1
   end
 rescue => e
   log.puts e.to_s
